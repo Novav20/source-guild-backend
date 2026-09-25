@@ -3,7 +3,7 @@ using SourceGuild.Domain.Enums;
 
 namespace SourceGuild.Domain.Entities;
 
-public class Section
+public class Section : IOrderable
 {
     private readonly List<Lesson> _lessons = [];
 
@@ -84,12 +84,11 @@ public class Section
         _lessons.Remove(lesson);
 
         // Re-indexar para mantener la secuencia 0, 1, 2...
-        for (int i = 0; i < _lessons.Count; i++)
-        {
-            _lessons[i].SetOrder(i);
-        }
+        _lessons.Reindex();
 
         UpdatedAt = DateTime.UtcNow;
         return Result.Success();
     }
+
+    void IOrderable.SetOrder(int newOrder) => SetOrder(newOrder);
 }

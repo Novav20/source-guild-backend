@@ -4,7 +4,7 @@ using SourceGuild.Domain.Enums;
 
 namespace SourceGuild.Domain.Entities;
 
-public class Lesson
+public class Lesson : IOrderable
 {
     private readonly List<ContentBlock> _contentBlocks = [];
 
@@ -95,12 +95,11 @@ public class Lesson
 
         _contentBlocks.Remove(block);
 
-        for (int i = 0; i < _contentBlocks.Count; i++)
-        {
-            _contentBlocks[i].SetOrder(i);
-        }
+        _contentBlocks.Reindex();
 
         UpdatedAt = DateTime.UtcNow;
         return Result.Success();
     }
+
+    void IOrderable.SetOrder(int newOrder) => SetOrder(newOrder);
 }

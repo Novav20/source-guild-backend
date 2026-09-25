@@ -59,12 +59,10 @@ public class CourseCommands(
 
     public async Task<Result> UpdatePriceAsync(Guid courseId, decimal newPrice, CancellationToken cancellationToken = default)
     {
-        var course = await courseRepository.GetByIdAsync(courseId, cancellationToken);
-        if (course is null)
-            return Result.Failure(Error.NotFound("Course.NotFound", "El curso no existe."));
-
-        if (course.InstructorId != currentUserService.UserId)
-            return Result.Failure(Error.Validation("Auth.Forbidden", "No tiene permisos para modificar este curso."));
+        var courseResult = await GetCourseAndVerifyOwnershipAsync(courseId, includeDetails: false, cancellationToken);
+        if (courseResult.IsFailure) return Result.Failure(courseResult.Error);
+        
+        var course = courseResult.Value;
 
         var updateResult = course.UpdatePrice(newPrice);
         if (updateResult.IsFailure)
@@ -78,13 +76,10 @@ public class CourseCommands(
 
     public async Task<Result> PublishAsync(Guid courseId, CancellationToken cancellationToken = default)
     {
-        // Se carga con secciones y lecciones para evaluar la invariante de publicación
-        var course = await courseRepository.GetWithDetailsAsync(courseId, cancellationToken);
-        if (course is null)
-            return Result.Failure(Error.NotFound("Course.NotFound", "El curso no existe."));
-
-        if (course.InstructorId != currentUserService.UserId)
-            return Result.Failure(Error.Validation("Auth.Forbidden", "No tiene permisos para publicar este curso."));
+        var courseResult = await GetCourseAndVerifyOwnershipAsync(courseId, includeDetails: true, cancellationToken);
+        if (courseResult.IsFailure) return Result.Failure(courseResult.Error);
+        
+        var course = courseResult.Value;
 
         var publishResult = course.Publish();
         if (publishResult.IsFailure)
@@ -102,12 +97,10 @@ public class CourseCommands(
 
     public async Task<Result<SectionDto>> AddSectionAsync(Guid courseId, CreateSectionDto dto, CancellationToken cancellationToken = default)
     {
-        var course = await courseRepository.GetWithDetailsAsync(courseId, cancellationToken);
-        if (course is null)
-            return Result<SectionDto>.Failure(Error.NotFound("Course.NotFound", "El curso no existe."));
-
-        if (course.InstructorId != currentUserService.UserId)
-            return Result<SectionDto>.Failure(Error.Validation("Auth.Forbidden", "No tiene permisos para editar este curso."));
+        var courseResult = await GetCourseAndVerifyOwnershipAsync(courseId, includeDetails: true, cancellationToken);
+        if (courseResult.IsFailure) return Result<SectionDto>.Failure(courseResult.Error);
+        
+        var course = courseResult.Value;
 
         var sectionResult = course.AddSection(dto.Title);
         if (sectionResult.IsFailure)
@@ -125,12 +118,10 @@ public class CourseCommands(
         CreateLessonDto dto,
         CancellationToken cancellationToken = default)
     {
-        var course = await courseRepository.GetWithDetailsAsync(courseId, cancellationToken);
-        if (course is null)
-            return Result<LessonDto>.Failure(Error.NotFound("Course.NotFound", "El curso no existe."));
-
-        if (course.InstructorId != currentUserService.UserId)
-            return Result<LessonDto>.Failure(Error.Validation("Auth.Forbidden", "No tiene permisos para editar este curso."));
+        var courseResult = await GetCourseAndVerifyOwnershipAsync(courseId, includeDetails: true, cancellationToken);
+        if (courseResult.IsFailure) return Result<LessonDto>.Failure(courseResult.Error);
+        
+        var course = courseResult.Value;
 
         var section = course.Sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
@@ -162,5 +153,20 @@ public class CourseCommands(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<LessonDto>.Success(lesson.ToDto());
+    }
+
+    private async Task<Result<Course>> GetCourseAndVerifyOwnershipAsync(Guid courseId, bool includeDetails, CancellationToken cancellationToken)
+    {
+        var course = includeDetails
+            ? await courseRepository.GetWithDetailsAsync(courseId, cancellationToken)
+            : await courseRepository.GetByIdAsync(courseId, cancellationToken);
+
+        if (course is null)
+            return Result<Course>.Failure(Error.NotFound("Course.NotFound", "El curso no existe."));
+
+        if (course.InstructorId != currentUserService.UserId)
+            return Result<Course>.Failure(Error.Validation("Auth.Forbidden", "No tiene permisos para modificar este curso."));
+
+        return Result<Course>.Success(course);
     }
 }

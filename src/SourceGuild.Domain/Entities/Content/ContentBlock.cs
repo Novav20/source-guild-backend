@@ -1,6 +1,8 @@
+using SourceGuild.Domain.Common;
+
 namespace SourceGuild.Domain.Entities.Content;
 
-public abstract class ContentBlock
+public abstract class ContentBlock : IOrderable
 {
     protected ContentBlock() { }
 
@@ -18,4 +20,6 @@ public abstract class ContentBlock
         Order = newOrder;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    void IOrderable.SetOrder(int newOrder) => SetOrder(newOrder);
 }

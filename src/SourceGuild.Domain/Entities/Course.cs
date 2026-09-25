@@ -148,10 +148,7 @@ public class Course
         _sections.Remove(section);
 
         // Re-indexar el orden de las secciones restantes para no dejar huecos
-        for (int i = 0; i < _sections.Count; i++)
-        {
-            _sections[i].SetOrder(i);
-        }
+        _sections.Reindex();
 
         UpdatedAt = DateTime.UtcNow;
         return Result.Success();
