@@ -19,7 +19,7 @@ public class SGDbContext(DbContextOptions<SGDbContext> options)
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); // CRUCIAL first call - correctly placed!
+        base.OnModelCreating(modelBuilder); // CRUCIAL first call
 
         modelBuilder.Entity<Course>(entity =>
         {
@@ -106,7 +106,7 @@ public class SGDbContext(DbContextOptions<SGDbContext> options)
                 .WithMany(c => c.Enrollments)
                 .HasForeignKey(e => e.CourseId)
                 .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.Enrollments)
