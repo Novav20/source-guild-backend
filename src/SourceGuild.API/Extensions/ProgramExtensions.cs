@@ -91,36 +91,36 @@ public static class ProgramExtensions
     /// <returns>A Task representing the asynchronous operation, returning the WebApplication for chaining.</returns>
     public static async Task<WebApplication> ConfigureDatabaseAndSeeding(this WebApplication app)
     {
-        using (var scope = app.Services.CreateScope())
+        using var scope = app.Services.CreateScope();
+
+        var serviceProvider = scope.ServiceProvider;
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+        try
         {
-            var serviceProvider = scope.ServiceProvider;
-            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-            try
+            var context = serviceProvider.GetRequiredService<SGDbContext>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+            // Apply migrations to create/update database schema
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully.");
+
+            // Seed essential data (roles, admin user)
+            await EssentialDataSeeder.SeedDataAsync(serviceProvider);
+            logger.LogInformation("Essential data seeded successfully.");
+
+            // Seed test data only in Development environment
+            if (app.Environment.IsDevelopment())
             {
-                var context = serviceProvider.GetRequiredService<SGDbContext>();
-                var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
-                // Apply migrations to create/update database schema
-                await context.Database.MigrateAsync();
-                logger.LogInformation("Database migrations applied successfully.");
-
-                // Seed essential data (roles, admin user)
-                await EssentialDataSeeder.SeedDataAsync(serviceProvider);
-                logger.LogInformation("Essential data seeded successfully.");
-
-                // Seed test data only in Development environment
-                if (app.Environment.IsDevelopment())
-                {
-                    await TestDataSeeder.SeedDataAsync(context, userManager);
-                    logger.LogInformation("Test data seeded successfully.");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An error occurred during the seeding process.");
+                await TestDataSeeder.SeedDataAsync(context, userManager);
+                logger.LogInformation("Test data seeded successfully.");
             }
         }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred during the seeding process.");
+        }
+
         return app;
     }
 }

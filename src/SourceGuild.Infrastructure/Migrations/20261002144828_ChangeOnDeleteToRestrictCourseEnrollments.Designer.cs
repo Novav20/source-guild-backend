@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SourceGuild.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using SourceGuild.Infrastructure.Persistence;
 namespace SourceGuild.Infrastructure.Migrations
 {
     [DbContext(typeof(SGDbContext))]
-    partial class SGDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002144828_ChangeOnDeleteToRestrictCourseEnrollments")]
+    partial class ChangeOnDeleteToRestrictCourseEnrollments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
